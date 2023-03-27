@@ -154,7 +154,10 @@ def getCornersFromImg(img):
     topRow, botRow = getTopBotRows(colc, pts)
 
     cols = getEveryColumn(topRow, botRow, pts)
-    cols = np.array(cols).reshape((81, 2))
+    if len(cols)>0:
+        cols = np.array(cols).reshape((81, 2))
+        cols = cols[:, ::-1].astype(np.float32)
+
     return cols, fr
     
 
