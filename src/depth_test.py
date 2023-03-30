@@ -40,11 +40,13 @@ cap.set(cv2.CAP_PROP_POS_FRAMES,800)
 ret, frame = cap.read()
 corners0, gray0 = getCornersFromImg(frame)
 frame0 = cv2.cvtColor(gray0, cv2.COLOR_GRAY2RGB)
+f0_bkp = frame0.copy()
 
 cap.set(cv2.CAP_PROP_POS_FRAMES,830)
 ret, frame = cap.read()
 corners1, gray1 = getCornersFromImg(frame)
 frame1 = cv2.cvtColor(gray1, cv2.COLOR_GRAY2RGB)
+f1_bkp = frame1.copy()
 
 
 for pt in corners0:

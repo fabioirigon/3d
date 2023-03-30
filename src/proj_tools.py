@@ -10,11 +10,22 @@ import cv2
 import numpy as np
 
 
+def vecs2P(rvec, tvec):
+    R, _ = cv2.Rodrigues(rvec)
+    P = np.hstack((R, tvec.reshape(3, 1)))
+    return P
+
 def invRT(R, T):
     RI = np.linalg.inv(R)
     TI = np.matmul(RI, T.reshape(3, 1))*(-1)
     RTI = np.hstack((RI, TI))
     return RTI
+
+def invP(P):
+    RI = np.linalg.inv(P[:, :3])
+    TI = np.matmul(RI, P[:, 3].reshape(3, 1))*(-1)
+    PI = np.hstack((RI, TI))
+    return PI
 
 def invRvecTvec(rvec, tvec):
     R, _ = cv2.Rodrigues(rvec)
@@ -25,6 +36,7 @@ def invRvecTvec(rvec, tvec):
     
     irvec, _ = cv2.Rodrigues(RI)
     return irvec.flatten(), TI.flatten()
+
 
 def composeRvecTvec(rvec0, tvec0, rvec1, tvec1):
     R0, _ = cv2.Rodrigues(rvec0)
@@ -37,6 +49,30 @@ def composeRvecTvec(rvec0, tvec0, rvec1, tvec1):
     rvec2, _ = cv2.Rodrigues(R2)
     return rvec2, tvec2
 
+def composeP(P0, P1):
+    R2 = np.matmul(P0[:, :3], P1[:, :3])
+    T2 = np.matmul(P1[:, :3], P0[:, 3].reshape(3, 1))
+    T2 = T2.flatten() + P1[:, 3]
+    P2 = np.hstack((R2, T2.reshape(3, 1)))
+    return P2
+
+def ptsToWld(u, v, z, A):
+    fx, fy, cx, cy = A[0, 0], A[1, 1], A[0, 2], A[1, 2]
+    x = (u-cx)*z/fx
+    y = (v-cy)*z/fy
+    return x, y
+
+#P = P0
+def projPts(X, Y, Z, P, A):
+    W = np.vstack((X, Y, Z, np.ones(len(X))))
+    W.shape
+    nP = np.matmul(A, P)
+    nP.shape
+    uvw = np.matmul(nP, W)
+    uvw = uvw/uvw[2, None]
+    return uvw[0], uvw[1]
+
+    
 # def camToWldPts(rvec, tvec, A):
     
 #     imgPts = np.ones((3, 5))
