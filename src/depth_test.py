@@ -39,15 +39,14 @@ lk_params = dict( winSize  = (15, 15),
 cap.set(cv2.CAP_PROP_POS_FRAMES,800)
 ret, frame = cap.read()
 corners0, gray0 = getCornersFromImg(frame)
-frame0 = cv2.cvtColor(gray0, cv2.COLOR_GRAY2RGB)
-f0_bkp = frame0.copy()
+frame0 = cv2.cvtColor(gray0, cv2.COLOR_GRAY2BGR)
+cv2.imwrite("../meta_data/frame0.jpg", frame0)
 
 cap.set(cv2.CAP_PROP_POS_FRAMES,830)
 ret, frame = cap.read()
 corners1, gray1 = getCornersFromImg(frame)
-frame1 = cv2.cvtColor(gray1, cv2.COLOR_GRAY2RGB)
-f1_bkp = frame1.copy()
-
+frame1 = cv2.cvtColor(gray1, cv2.COLOR_GRAY2BGR)
+cv2.imwrite("../meta_data/frame1.jpg", frame1)
 
 for pt in corners0:
     cv2.circle(frame0, pt.astype(int), 6, (255,0,0), 4)
@@ -89,7 +88,8 @@ for i in range(81):
 
 ret0, rvec0, tvec0 = cv2.solvePnP(pts_w, corners0, A, None)
 ret1, rvec1, tvec1 = cv2.solvePnP(pts_w, corners1, A, None)
-
+arr = np.hstack((rvec0, tvec0, rvec1, tvec1))
+np.savetxt("../meta_data/camsPos.txt", arr)
 
 projM0 = np.hstack((cv2.Rodrigues(rvec0)[0], tvec0))
 projM1 = np.hstack((cv2.Rodrigues(rvec1)[0], tvec1))
