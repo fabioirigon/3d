@@ -20,8 +20,8 @@ A = np.array([[565.37877495,   0.        , 321.32942885],
 distCoefs_97f = np.array([[ 2.22609859e-01, -1.59712209e+00, -1.58796203e-03, 6.81037555e-04,  4.74766986e+00]])
 
 # Parameters for lucas kanade optical flow
-lk_params = dict( winSize  = (15, 15),
-                  maxLevel = 2,
+lk_params = dict( winSize  = (25, 25),
+                  maxLevel = 1,
                   criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 3, 0.05))
 
 def getCorrespondences(g0, g1):
@@ -41,6 +41,69 @@ def getCorrespondences(g0, g1):
     p1g = p1[st==1]
     p0g = p0[st==1]
     print('lens: ', len(p0), len(p0g))
+    return p0g, p1g
+
+def getCorrespondencesLowRes(g0, g1):
+
+    # params for ShiTomasi corner detection
+    feature_params = dict( maxCorners = 500,
+                           qualityLevel = 0.1,
+                           minDistance = 10,
+                           blockSize = 7)
+
+    p0 = cv2.goodFeaturesToTrack(g0, mask = None, **feature_params)
+    g0f, g1f = cv2.pyrDown(g0), cv2.pyrDown(g1)
+    g0f, g1f = cv2.pyrDown(g0f), cv2.pyrDown(g1f)
+    g0f , g1f = cv2.blur(g0f,(5, 5)), cv2.blur(g1f,(5, 5))
+
+    p0f = p0/4
+    p1f, st, err = cv2.calcOpticalFlowPyrLK(g0f, g1f, p0f, None, **lk_params)
+
+    if p1f is None: 
+        print('track error')
+    
+    p1g = p1f[st==1]
+    p0g = p0f[st==1]
+    p0g, p1g = p0g*4, p1g*4
+    print('lens: ', len(p0f), len(p0g))
+
+    if 0:
+        c0f = cv2.cvtColor(g0, cv2.COLOR_GRAY2BGR)
+        c1f = cv2.cvtColor(g1, cv2.COLOR_GRAY2BGR)
+        # draw the tracks
+        for (pa, pb) in zip(p0g, p1g):
+            a, b = int(pa[0]), int(pa[1])
+            c, d = int(pb[0]), int(pb[1])
+            cv2.line(c1f, (a, b), (c, d), (255,0,0), 1)
+            cv2.circle(c0f, (a, b), 3, (0,255,0), 1)
+            cv2.circle(c1f, (c,d), 3, (0,255,0), 1)
+        plt.figure(40); plt.imshow(c0f)
+        plt.figure(41); plt.imshow(c1f)
+
+    if 1:
+        lk_params_2 = dict( winSize  = (7, 7),
+                          maxLevel = 0,
+                          criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.02))
+    
+        p1f, st, err = cv2.calcOpticalFlowPyrLK(g0, g1, p0g, p1g, flags=cv2.OPTFLOW_USE_INITIAL_FLOW, **lk_params_2)
+        p1f.shape, st.shape, p0g.shape
+        p1g = p1f[st[:, 0]==1]
+        p0g = p0g[st[:, 0]==1]
+        print('lens: ', len(p1f), len(p1g))
+    
+        if 1:
+            c0f = cv2.cvtColor(g0, cv2.COLOR_GRAY2BGR)
+            c1f = cv2.cvtColor(g1, cv2.COLOR_GRAY2BGR)
+            # draw the tracks
+            for (pa, pb) in zip(p0g, p1g):
+                a, b = int(pa[0]), int(pa[1])
+                c, d = int(pb[0]), int(pb[1])
+                cv2.line(c1f, (a, b), (c, d), (255,0,0), 1)
+                cv2.circle(c0f, (a, b), 3, (0,255,0), 1)
+                cv2.circle(c1f, (c,d), 3, (0,255,0), 1)
+            plt.figure(50); plt.imshow(c0f)
+            plt.figure(51); plt.imshow(c1f)
+
     return p0g, p1g
 
 def getCorrFast(g0, g1):
@@ -89,9 +152,9 @@ if 0:
     g0 = clahe.apply(g0)
     g1 = clahe.apply(g1)
 
-p0g, p1g = getCorrespondences(g0, g1)
+#p0g, p1g = getCorrespondences(g0, g1)
 #p0g, p1g = getCorrFast(g0, g1)
-
+p0g, p1g = getCorrespondencesLowRes(g0, g1)
 
 c0 = cv2.cvtColor(g0, cv2.COLOR_GRAY2BGR)
 c1 = cv2.cvtColor(g1, cv2.COLOR_GRAY2BGR)
@@ -159,7 +222,8 @@ for kk in range(4):
     thresh = np.median(err)
     p3f, p1gf = p3[:, err<thresh].copy(), p1g[err<thresh].copy()
     #p3f.shape, p3.shape
-    retv, rvec, tvec, inliers = cv2.solvePnPRansac(p3f.T, p1gf, A, None)
+    #retv, rvec, tvec, inliers = cv2.solvePnPRansac(p3f.T, p1gf, A, None)
+    retv, rvec, tvec = cv2.solvePnP(p3f.T, p1gf, A, None)
     P_0_1 = prt.vecs2P(rvec, tvec)
     nP_0_1 = np.matmul(A, P_0_1)
     
@@ -186,8 +250,8 @@ z = p3[2, :].copy()
 plt.figure(20), plt.plot(z)
 thr = np.median(z)
 print('thr: ', thr)
-z[z<thr*0.7] = thr*0.7
-z[z>thr*1.4] = thr*1.4
+z[z<thr*0.8] = thr*0.8
+z[z>thr*1.2] = thr*1.2
 z = (255*(z-z.min())/(z.max()-z.min()))
 z = z.astype(np.uint8)
 z = z.ravel()
@@ -195,7 +259,7 @@ z.shape, np.median(z)
 
 c1 = cv2.cvtColor(g1, cv2.COLOR_GRAY2BGR)
 for i in range(len(p0g)):
-    if err[i]>np.median(err)*1.5:
+    if err[i]>np.median(err)*1.7:
         continue
     a, b = int(p0g[i, 0]), int(p0g[i, 1])
     c = int(z[i])
