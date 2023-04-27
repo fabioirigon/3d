@@ -41,6 +41,16 @@ def searchEpLine(im0, im1, pt0, pt1a, pt1b, hSz):
             break
     return tx+hSz, ty+hSz
 
+def imgGrad(img, pt, hSz):
+    x, y = int(pt0[0]), int(pt0[1])
+    crop = img[y-hSz: y+hSz, x-hSz:x+hSz].astype(np.float32)
+    cropx = img[y-hSz: y+hSz, x-hSz+1:x+hSz+1].astype(np.float32)
+    cropy = img[y-hSz+1: y+hSz+1, x-hSz:x+hSz].astype(np.float32)
+    dx = np.mean(crop-cropx)
+    dy = np.mean(crop-cropy)
+    da = (dx*dx + dy*dy)**0.5
+    return dx/da, dy/da, da
+    
 
     
 plt.close('all')
@@ -54,6 +64,16 @@ g0 = cv2.cvtColor(f0_bkp, cv2.COLOR_RGB2GRAY)
 g1 = cv2.cvtColor(f1_bkp, cv2.COLOR_RGB2GRAY)
 f0 = f0_bkp.copy()
 f1 = f1_bkp.copy()
+
+if 0:
+    g0f, g1f = g0.astype(float), g1.astype(float)
+    diff = np.abs(g0f-g1f)
+    diff.shape, diff.max(), diff.min()
+    plt.figure(100)
+    plt.imshow(diff.astype(np.uint8), cmap='gray')
+    plt.figure(101)
+    plt.imshow(diff, cmap='gray')
+
 
 edges = cv2.Canny(g0,100,200)
 py, px = np.where(edges == np.max(edges))
@@ -124,4 +144,5 @@ if 1:
     #pt0, pt1a, pt1b = (int(u0[3]), int(v0[3])), (int(u1[3]), int(v1[3])), (int(u2[3]), int(v2[3]))
     pt0, pt1a, pt1b = (u0[3], v0[3]), (u1[3],v1[3]), (u2[3],v2[3])
     searchEpLine(g0, g1, pt0, pt1a, pt1b, 10)
-     
+
+dx, dy, da = imgGrad(g0, pt0, 8)

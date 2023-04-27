@@ -151,6 +151,8 @@ def getCornersFromImg(img):
     img = correlate(th)
     pts = getPts(img)
     colc = getCentralCol(pts, fr.shape[0], fr.shape[1])
+    if len(colc) < 2:
+        return [], fr
     topRow, botRow = getTopBotRows(colc, pts)
 
     cols = getEveryColumn(topRow, botRow, pts)
@@ -159,7 +161,32 @@ def getCornersFromImg(img):
         cols = cols[:, ::-1].astype(np.float32)
 
     return cols, fr
+
+def sort_corners(pts):
+    pts = pts.astype(float)
+    ymin, ymax, xmin = pts[:, 1].min(), pts[:, 1].max(), pts[:, 0].min()
+    d_topLeft = np.abs(pts[:, 0]-xmin) + np.abs(pts[:, 1]-ymin)
+    d_botLeft = np.abs(pts[:, 0]-xmin) + np.abs(pts[:, 1]-ymax)
+    tl, bl = pts[np.argmin(d_topLeft)], pts[np.argmin(d_botLeft)]
     
+    srt = [pts[np.argmin(d_topLeft)]]
+    dx, dy = (bl-tl)/8
+    for i in range(9):
+        for j in range(8):
+            x0, y0 = srt[-1]
+            x1, y1 = x0+dx, y0+dy
+            pt_idx = np.argmin(np.abs(pts[:, 0]-x1) + np.abs(pts[:, 1]-y1))
+            srt.append(pts[pt_idx])
+            #print(pts[pt_idx])
+        if i < 8:
+            x0, y0 = srt[-9]
+            x1, y1 = x0+dy, y0-dx
+            pt_idx = np.argmin(np.abs(pts[:, 0]-x1) + np.abs(pts[:, 1]-y1))
+            srt.append(pts[pt_idx])
+            #print(pts[pt_idx])
+    pts_s = np.array(srt)
+    return pts_s
+
 
 if 0:
     img_num = 50
