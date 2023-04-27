@@ -72,6 +72,19 @@ def projPts(X, Y, Z, P, A):
     uvw = uvw/uvw[2, None]
     return uvw[0], uvw[1]
 
+def fastTri(P):
+    #k = matmul(R, uv0)
+    #u1 = (kx*d+tx)/(kz*d + tz)
+    #v1 = (ky*d+ty)/(kz*d + tz)
+    #num = (tx-u1*tz)*(kz*tx-kx*tz)+(ty-v1*tz)*(kz*ty-ky*tz)
+    #den = (kx-kz*u1)(kx*tz-kz*tx)+(ky-kz*v1)*(ky*tz-kz*ty)
+    pass
+
+def reprErr(pts0, pts1):
+    err = pts1-pts0
+    err = err*err
+    err = err[:, 0]+err[:, 1]
+    return err**0.5
     
 # def camToWldPts(rvec, tvec, A):
     
